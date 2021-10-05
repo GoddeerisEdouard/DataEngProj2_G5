@@ -1,0 +1,2 @@
+SERVER = 'server_name'
+DATABASE= 'database_name'
