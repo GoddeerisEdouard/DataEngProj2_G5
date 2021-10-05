@@ -1,2 +1,2 @@
-SERVER = 'server_name'
-DATABASE= 'database_name'
+SERVER = '.'
+DATABASE= 'POC_DB'
