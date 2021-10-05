@@ -9,12 +9,6 @@ conn = pyodbc.connect(f'Driver={config.DRIVER};'
                       'Trusted_Connection=yes;')
 
 cursor = conn.cursor()
-cursor.execute('SELECT * FROM DATASET')
-
-kak = cursor.fetchall()
-<<<<<<< HEAD
-print(kak)
-=======
 
 res = requests.get(
     'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json').json()
@@ -25,4 +19,3 @@ for elem in res:
         'DATE') is not None else None, elem.get('PROVINCE', None), elem.get('REGION', None), elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
 
 cursor.commit()
->>>>>>> refs/remotes/origin/main
