@@ -1,6 +1,8 @@
 import pyodbc
 import config
 import requests
+import schedule
+import time
 from datetime import datetime
 
 conn = pyodbc.connect(f'Driver={config.DRIVER};'
@@ -8,14 +10,23 @@ conn = pyodbc.connect(f'Driver={config.DRIVER};'
                       f'Database={config.DATABASE};'
                       'Trusted_Connection=yes;')
 
-cursor = conn.cursor()
+def fillDatabase():
+    cursor = conn.cursor()
 
-res = requests.get(
-    'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json').json()
+    res = requests.get(
+        'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json').json()
+    
+    for elem in res:
+        print(elem)
+        cursor.execute("insert into DATASET(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
+            'DATE') is not None else None, elem.get('PROVINCE', None), elem.get('REGION', None), elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
+    
+    cursor.commit()
 
-for elem in res:
-    print(elem)
-    cursor.execute("insert into DATASET(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-        'DATE') is not None else None, elem.get('PROVINCE', None), elem.get('REGION', None), elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
+schedule.every().day.at("01:00").do(fillDatabase)
 
-cursor.commit()
+while True:
+    schedule.run_pending()
+    time.sleep(60)
+    
+# nohup python3.8 dbConnection.py &
