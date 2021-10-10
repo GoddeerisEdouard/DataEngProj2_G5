@@ -13,6 +13,8 @@ conn = pyodbc.connect(f'Driver={config.DRIVER};'
 def fillDatabase():
     cursor = conn.cursor()
 
+    cursor.execute("truncate table DATASET")
+    
     res = requests.get(
         'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json').json()
     
