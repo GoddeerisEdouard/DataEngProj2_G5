@@ -12,7 +12,7 @@ conn = pyodbc.connect(f'Driver={config.DRIVER};'
 
 def fillDatabase():
     cursor = conn.cursor()
-
+    
     cursor.execute("truncate table DATASET")
     
     res = requests.get(
