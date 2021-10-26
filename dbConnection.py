@@ -7,7 +7,7 @@ from datetime import datetime
 
 conn = pyodbc.connect(f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}')
 
-def init_db():
+def init_db() -> pyodbc.Cursor:
     sql_create_cases_table = """
     IF OBJECT_ID(N'dbo.Cases', N'U') IS NULL
     BEGIN
@@ -34,45 +34,41 @@ def init_db():
         )
     END"""
 
-    cursor = conn.cursor()
-    cursor.execute(sql_create_cases_table)
-    cursor.execute(sql_create_mort_table)
-    cursor.commit()
+    with conn.cursor() as cursor:
+        cursor.execute(sql_create_cases_table)
+        cursor.execute(sql_create_mort_table)
+        cursor.commit()
     print("database has been initialized!")
 
 
-def fillDatabase():
-    cursor = conn.cursor()
+def fillDatabase() -> None:
+    with conn.cursor() as cursor:
+        data_cases_agesex(cursor)
+        data_mort(cursor)
+        cursor.commit()
+    print(f"filled db at {datetime.now()}")
 
-    data_cases_agesex(cursor)
-    data_mort(cursor)
 
-    cursor.commit()
-
-
-def data_cases_agesex(cursor):
+def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Cases")
 
     res = requests.get(
         'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json').json()
-
+    
     for elem in res:
-        print(elem)
         cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, elem.get('PROVINCE', None), elem.get('REGION', None), elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
 
 
-def data_mort(cursor):
+def data_mort(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Mort")
 
     res = requests.get(
         'https://epistat.sciensano.be/Data/COVID19BE_MORT.json').json()
 
     for elem in res:
-        print(elem)
         cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, elem.get('REGION', None), elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))
-
 
 init_db()
 schedule.every().day.at("01:00").do(fillDatabase)
