@@ -5,11 +5,7 @@ import schedule
 import time
 from datetime import datetime
 
-conn = pyodbc.connect(f'Driver={config.DRIVER};'
-                      f'Server={config.SERVER};'
-                      f'Database={config.DATABASE};'
-                      'Trusted_Connection=yes;')
-
+conn = pyodbc.connect(f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}')
 
 def init_db():
     sql_create_cases_table = """
@@ -79,6 +75,7 @@ def data_mort(cursor):
 
 
 init_db()
+fillDatabase()
 schedule.every().day.at("01:00").do(fillDatabase)
 
 while True:
