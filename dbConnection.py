@@ -75,11 +75,8 @@ def data_mort(cursor):
 
 
 init_db()
-fillDatabase()
 schedule.every().day.at("01:00").do(fillDatabase)
 
 while True:
     schedule.run_pending()
     time.sleep(60)
-
-# nohup python3.8 dbConnection.py &
