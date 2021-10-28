@@ -5,9 +5,32 @@ import schedule
 import time
 from datetime import datetime
 
-conn = pyodbc.connect(f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}')
+from contextlib import contextmanager
+import pyodbc
+import sys
 
-def init_db() -> pyodbc.Cursor:
+CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
+
+@contextmanager
+def open_db_connection(connection_string, commit=False):
+    connection = pyodbc.connect(connection_string)
+    cursor = connection.cursor()
+    try:
+        yield cursor
+    except pyodbc.DatabaseError as err:
+        error, = err.args
+        sys.stderr.write(error.message)
+        cursor.execute("ROLLBACK")
+        raise err
+    else:
+        if commit:
+            cursor.execute("COMMIT")
+        else:
+            cursor.execute("ROLLBACK")
+    finally:
+        connection.close()
+
+def init_db() -> None:
     sql_create_cases_table = """
     IF OBJECT_ID(N'dbo.Cases', N'U') IS NULL
     BEGIN
@@ -33,19 +56,16 @@ def init_db() -> pyodbc.Cursor:
         DEATHS INT
         )
     END"""
-
-    with conn.cursor() as cursor:
+    with open_db_connection(CONN_STRING, commit=True) as cursor:
         cursor.execute(sql_create_cases_table)
         cursor.execute(sql_create_mort_table)
-        cursor.commit()
     print("database has been initialized!")
 
 
 def fillDatabase() -> None:
-    with conn.cursor() as cursor:
+    with open_db_connection(CONN_STRING, commit=True) as cursor:
         data_cases_agesex(cursor)
         data_mort(cursor)
-        cursor.commit()
     print(f"filled db at {datetime.now()}")
 
 
