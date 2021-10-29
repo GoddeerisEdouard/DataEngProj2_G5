@@ -1,10 +1,10 @@
 import pyodbc
 import config
+import constants
 import requests
 import schedule
 import time
 from datetime import datetime
-
 from contextlib import contextmanager
 import pyodbc
 import sys
@@ -68,7 +68,6 @@ def fillDatabase() -> None:
         data_mort(cursor)
     print(f"filled db at {datetime.now()}")
 
-
 def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Cases")
 
@@ -77,8 +76,7 @@ def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     
     for elem in res:
         cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-            'DATE') is not None else None, elem.get('PROVINCE', None), elem.get('REGION', None), elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
-
+            'DATE') is not None else None, constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
 
 def data_mort(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Mort")
@@ -88,7 +86,7 @@ def data_mort(cursor: pyodbc.Cursor) -> None:
 
     for elem in res:
         cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-            'DATE') is not None else None, elem.get('REGION', None), elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))
+            'DATE') is not None else None, constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))  
 
 init_db()
 schedule.every().day.at("01:00").do(fillDatabase)
