@@ -61,7 +61,7 @@ def init_db() -> None:
     IF OBJECT_ID(N'dbo.Muni', N'U') IS NULL
     BEGIN
         CREATE TABLE Muni(
-            NIS5 INT,
+            NIS5 VARCHAR(5),
             [DATE] DATE,
             MUNI TEXT,
             PROVINCE TEXT,
