@@ -83,22 +83,37 @@ def init_db() -> None:
             COUNT INT
         )
     END"""
+    
+    sql_create_logging_table = """
+    IF OBJECT_ID(N'dbo.Logging', N'U') IS NULL
+    BEGIN
+        CREATE TABLE Logging(
+            LOGGING TEXT
+        )
+    END"""
 
     with open_db_connection(CONN_STRING, commit=True) as cursor:
         cursor.execute(sql_create_cases_table)
         cursor.execute(sql_create_mort_table)
         cursor.execute(sql_create_muni_table)
         cursor.execute(sql_create_vaccins_table)
+        cursor.execute(sql_create_logging_table)
     print("database has been initialized!")
 
 
 def fillDatabase() -> None:
     with open_db_connection(CONN_STRING, commit=True) as cursor:
-        data_cases_agesex(cursor)
-        data_mort(cursor)
-        data_municipality(cursor)
-        data_vaccins(cursor)
-    print(f"filled db at {datetime.now()}")
+        try:
+            yield data_cases_agesex(cursor)
+            yield data_mort(cursor)
+            yield data_municipality(cursor)
+            yield data_vaccins(cursor)
+        except pyodbc.DatabaseError as err:
+            logging(cursor, f"Database Error | {datetime.now()}")
+            
+        logging(cursor, f"Database filled | {datetime.now()}")
+    
+    #print(f"filled db at {datetime.now()}")
 
 def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Cases")
@@ -108,6 +123,8 @@ def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     for elem in res:
         cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
+    
+    logging(cursor, f"Table Cases filled | {datetime.now()}")
 
 def data_mort(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Mort")
@@ -117,6 +134,8 @@ def data_mort(cursor: pyodbc.Cursor) -> None:
     for elem in res:
         cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))
+    
+    logging(cursor, f"Table Mort filled | {datetime.now()}")
 
 def data_municipality(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Muni")
@@ -126,6 +145,8 @@ def data_municipality(cursor: pyodbc.Cursor) -> None:
     for elem in res:
         cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", elem.get('NIS5', None), datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, elem.get('TX_DESCR_NL', None), constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('CASES', None))
+    
+    logging(cursor, f"Table Muni filled | {datetime.now()}")
 
 def data_vaccins(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Vaccins")
@@ -135,7 +156,12 @@ def data_vaccins(cursor: pyodbc.Cursor) -> None:
     for elem in res:
         cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('BRAND', None), elem.get('DOSE', None), elem.get('COUNT', None)) 
+    
+    logging(cursor, f"Table Vaccins filled | {datetime.now()}")
 
+def logging(cursor: pyodbc.Cursor, logging_data) -> None:
+    cursor.execute("insert into Logging(LOGGING) values (?)", logging_data)
+      
 init_db()
 schedule.every().day.at("01:00").do(fillDatabase)
 
