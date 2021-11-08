@@ -1,5 +1,0 @@
-SERVER = ''
-DATABASE = ''
-USERNAME = ''
-PASSWORD = '{<PASSWORD>}'   
-DRIVER = '{<DRIVER>}'
