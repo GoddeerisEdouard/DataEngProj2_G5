@@ -41,23 +41,20 @@ def init_db() -> None:
         cursor.execute(sql_statements.sql_create_muni_table)
         cursor.execute(sql_statements.sql_create_vaccins_table)
         cursor.execute(sql_statements.sql_create_logging_table)
-    print("database has been initialized!")
+        logging(cursor, f"Database has been initialized | {datetime.now()}")
 
 
 def fillDatabase() -> None:
     with open_db_connection(CONN_STRING, commit=True) as cursor:
         try:
-            yield data_cases_agesex(cursor)
-            yield data_mort(cursor)
-            yield data_municipality(cursor)
-            yield data_vaccins(cursor)
+            data_cases_agesex(cursor)
+            data_mort(cursor)
+            data_municipality(cursor)
+            data_vaccins(cursor)
         except pyodbc.DatabaseError as err:
             logging(cursor, f"Database Error | {datetime.now()}")
 
         logging(cursor, f"Database filled | {datetime.now()}")
-
-    #print(f"filled db at {datetime.now()}")
-
 
 def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Cases")
@@ -114,7 +111,7 @@ def getData(cursor, data):
     try:
         return requests.get(data).json()
     except requests.RequestException as err:
-        logging(cursor, f"There was an Error in retrieving: {data}")
+        logging(cursor, f"There was an error in retrieving: {data}")
 
 init_db()
 fillDatabase()
