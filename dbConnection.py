@@ -117,6 +117,7 @@ def getData(cursor, data):
         logging(cursor, f"There was an Error in retrieving: {data}")
 
 init_db()
+fillDatabase()
 schedule.every().day.at("01:00").do(fillDatabase)
 
 while True:
