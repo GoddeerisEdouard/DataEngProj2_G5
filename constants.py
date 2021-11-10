@@ -17,5 +17,6 @@ regions = {
     "Brussels" : "Brussel",
     "Flanders" : "Vlaanderen",
     "Wallonia" : "Wallonië",
+    "Ostbelgien" : "Oost-België",
     None : None
 }

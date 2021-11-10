@@ -2,12 +2,12 @@ sql_create_cases_table = """
   IF OBJECT_ID(N'dbo.Cases', N'U') IS NULL
   BEGIN
       CREATE TABLE Cases(
-           [DATE] DATE,
-           PROVINCE TEXT,
-           REGION TEXT,
-           AGEGROUP TEXT,
-            SEX VARCHAR(1),
-            CASES INT
+          [DATE] DATE,
+          PROVINCE TEXT,
+          REGION TEXT,
+          AGEGROUP TEXT,
+          SEX VARCHAR(1),
+          CASES INT
         )
     END
     """
@@ -55,6 +55,7 @@ sql_create_logging_table = """
     IF OBJECT_ID(N'dbo.Logging', N'U') IS NULL
     BEGIN
         CREATE TABLE Logging(
+            DATE DATETIME,
             LOGGING TEXT
         )
     END"""

@@ -41,7 +41,7 @@ def init_db() -> None:
         cursor.execute(sql_statements.sql_create_muni_table)
         cursor.execute(sql_statements.sql_create_vaccins_table)
         cursor.execute(sql_statements.sql_create_logging_table)
-        logging(cursor, f"Database has been initialized | {datetime.now()}")
+        logging(cursor, datetime.now(), "Database has been initialized")
 
 
 def fillDatabase() -> None:
@@ -51,10 +51,10 @@ def fillDatabase() -> None:
             data_mort(cursor)
             data_municipality(cursor)
             data_vaccins(cursor)
+            logging(cursor, datetime.now(), "Database filled")
         except pyodbc.DatabaseError as err:
-            logging(cursor, f"Database Error | {datetime.now()}")
+            logging(cursor, datetime.now(), f"Database Error {err.args[1]}")
 
-        logging(cursor, f"Database filled | {datetime.now()}")
 
 def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Cases")
@@ -65,7 +65,7 @@ def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
         cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
 
-    logging(cursor, f"Table Cases filled | {datetime.now()}")
+    logging(cursor, datetime.now(), "Table Cases filled")
 
 
 def data_mort(cursor: pyodbc.Cursor) -> None:
@@ -77,7 +77,7 @@ def data_mort(cursor: pyodbc.Cursor) -> None:
         cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))
 
-    logging(cursor, f"Table Mort filled | {datetime.now()}")
+    logging(cursor, datetime.now(), "Table Mort filled")
 
 
 def data_municipality(cursor: pyodbc.Cursor) -> None:
@@ -87,9 +87,9 @@ def data_municipality(cursor: pyodbc.Cursor) -> None:
 
     for elem in res:
         cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", elem.get('NIS5', None), datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-            'DATE') is not None else None, elem.get('TX_DESCR_NL', None), constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('CASES', None))
+            'DATE') is not None else None, elem.get('TX_DESCR_NL', None), constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('CASES', None).replace('<', ''))
 
-    logging(cursor, f"Table Muni filled | {datetime.now()}")
+    logging(cursor, datetime.now(), "Table Muni filled")
 
 
 def data_vaccins(cursor: pyodbc.Cursor) -> None:
@@ -101,17 +101,17 @@ def data_vaccins(cursor: pyodbc.Cursor) -> None:
         cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
             'DATE') is not None else None, constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('BRAND', None), elem.get('DOSE', None), elem.get('COUNT', None))
 
-    logging(cursor, f"Table Vaccins filled | {datetime.now()}")
+    logging(cursor, datetime.now(), "Table Vaccins filled")
 
 
-def logging(cursor: pyodbc.Cursor, logging_data) -> None:
-    cursor.execute("insert into Logging(LOGGING) values (?)", logging_data)
+def logging(cursor: pyodbc.Cursor, date, logging_data) -> None:
+    cursor.execute("insert into Logging(DATE, LOGGING) values (?, ?)", date, logging_data)
 
 def getData(cursor, data):
     try:
         return requests.get(data).json()
     except requests.RequestException as err:
-        logging(cursor, f"There was an error in retrieving: {data}")
+        logging(cursor, datetime.now(), f"There was an error in retrieving: {data}")
 
 init_db()
 fillDatabase()
