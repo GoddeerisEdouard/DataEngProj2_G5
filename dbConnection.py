@@ -73,7 +73,6 @@ def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
         cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         constants.provinces[row.get('PROVINCE', None)], constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('CASES', None))
         rows_affected = iteration
-        print(row)
     logging(cursor, "Table Cases filled", ra=rows_affected)
 
 
@@ -90,7 +89,6 @@ def data_mort(cursor: pyodbc.Cursor) -> None:
         cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('DEATHS', None))
         rows_affected = iteration
-        print(row)
     logging(cursor, "Table Mort filled", ra=rows_affected)
 
 
@@ -107,7 +105,6 @@ def data_municipality(cursor: pyodbc.Cursor) -> None:
         cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", row.get('NIS5', None), datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         row.get('TX_DESCR_NL', None), constants.provinces[row.get('PROVINCE', None)], constants.regions[row.get('REGION', None)], row['CASES'].replace('<', '') if 'CASES' in row else None)
         rows_affected = iteration
-        print(row)
     logging(cursor, "Table Muni filled", ra=rows_affected)
 
 
@@ -124,7 +121,6 @@ def data_vaccins(cursor: pyodbc.Cursor) -> None:
         cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('BRAND', None), row.get('DOSE', None), row.get('COUNT', None))
         rows_affected = iteration
-        print(row)
     logging(cursor, "Table Vaccins filled", ra=rows_affected)
 
 
