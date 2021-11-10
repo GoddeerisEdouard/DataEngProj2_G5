@@ -12,7 +12,7 @@ import pyodbc
 import sys
 
 CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
-
+DATE_FORMAT = "%Y-%m-%d"
 
 @contextmanager
 def open_db_connection(connection_string, commit=False):
@@ -62,8 +62,8 @@ def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
 
     for elem in res:
-        cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-            'DATE') is not None else None, constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
+        cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
+        constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
 
     logging(cursor, datetime.now(), "Table Cases filled")
 
@@ -74,8 +74,8 @@ def data_mort(cursor: pyodbc.Cursor) -> None:
     res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
 
     for elem in res:
-        cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-            'DATE') is not None else None, constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))
+        cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
+        constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))
 
     logging(cursor, datetime.now(), "Table Mort filled")
 
@@ -86,8 +86,8 @@ def data_municipality(cursor: pyodbc.Cursor) -> None:
     res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
 
     for elem in res:
-        cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", elem.get('NIS5', None), datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-            'DATE') is not None else None, elem.get('TX_DESCR_NL', None), constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('CASES', None).replace('<', ''))
+        cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", elem.get('NIS5', None), datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
+        elem.get('TX_DESCR_NL', None), constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem['CASES'].replace('<', '') if 'CASES' in elem else None)
 
     logging(cursor, datetime.now(), "Table Muni filled")
 
@@ -98,8 +98,8 @@ def data_vaccins(cursor: pyodbc.Cursor) -> None:
     res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_VACC.json')
 
     for elem in res:
-        cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], "%Y-%m-%d") if elem.get(
-            'DATE') is not None else None, constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('BRAND', None), elem.get('DOSE', None), elem.get('COUNT', None))
+        cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
+        constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('BRAND', None), elem.get('DOSE', None), elem.get('COUNT', None))
 
     logging(cursor, datetime.now(), "Table Vaccins filled")
 
