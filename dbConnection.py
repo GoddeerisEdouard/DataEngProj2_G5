@@ -1,5 +1,6 @@
+from typing import Optional
 import pyodbc
-from requests.exceptions import RequestException
+import requests
 import config
 import constants
 import sql_statements
@@ -41,81 +42,102 @@ def init_db() -> None:
         cursor.execute(sql_statements.sql_create_muni_table)
         cursor.execute(sql_statements.sql_create_vaccins_table)
         cursor.execute(sql_statements.sql_create_logging_table)
-        logging(cursor, datetime.now(), "Database has been initialized")
+        logging(cursor, "Database has been initialized")
 
 
-def fillDatabase() -> None:
+def fill_database() -> None:
     with open_db_connection(CONN_STRING, commit=True) as cursor:
         try:
             data_cases_agesex(cursor)
             data_mort(cursor)
             data_municipality(cursor)
             data_vaccins(cursor)
-            logging(cursor, datetime.now(), "Database filled")
+            logging(cursor, "Database filled")
         except pyodbc.DatabaseError as err:
-            logging(cursor, datetime.now(), f"Database Error {err.args[1]}")
+            logging(cursor, f"Database Error {err.args[1]}")
 
 
 def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Cases")
     
-    res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
+    data = get_data(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
+    if data is None:
+        logging(cursor, "There was an error in retrieving cases data")
+        return
 
-    for elem in res:
-        cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
-        constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('CASES', None))
-
-    logging(cursor, datetime.now(), "Table Cases filled")
+    for row in data:
+        cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
+        constants.provinces[row.get('PROVINCE', None)], constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('CASES', None))
+    logging(cursor, "Table Cases filled")
 
 
 def data_mort(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Mort")
    
-    res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
-
-    for elem in res:
-        cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
-        constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('DEATHS', None))
-
-    logging(cursor, datetime.now(), "Table Mort filled")
+    data = get_data(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
+    if data is None:
+        logging(cursor, "There was an error in retrieving mort data")
+        return
+    
+    for row in data:
+        cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
+        constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('DEATHS', None))
+    logging(cursor, "Table Mort filled")
 
 
 def data_municipality(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Muni")
     
-    res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
+    data = get_data(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
+    if data is None:
+        logging(cursor, "There was an error in retrieving municipality data")
+        return
 
-    for elem in res:
-        cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", elem.get('NIS5', None), datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
-        elem.get('TX_DESCR_NL', None), constants.provinces[elem.get('PROVINCE', None)], constants.regions[elem.get('REGION', None)], elem['CASES'].replace('<', '') if 'CASES' in elem else None)
-
-    logging(cursor, datetime.now(), "Table Muni filled")
+    for row in data:
+        cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", row.get('NIS5', None), datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
+        row.get('TX_DESCR_NL', None), constants.provinces[row.get('PROVINCE', None)], constants.regions[row.get('REGION', None)], row['CASES'].replace('<', '') if 'CASES' in row else None)
+    logging(cursor, "Table Muni filled")
 
 
 def data_vaccins(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Vaccins")
 
-    res = getData(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_VACC.json')
+    data = get_data('https://epistat.sciensano.be/Data/COVID19BE_VACC.json')
+    if data is None:
+        logging(cursor, "There was an error in retrieving vaccin data")
+        return
 
-    for elem in res:
-        cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(elem['DATE'], DATE_FORMAT) if 'DATE' in elem else None, 
-        constants.regions[elem.get('REGION', None)], elem.get('AGEGROUP', None), elem.get('SEX', None), elem.get('BRAND', None), elem.get('DOSE', None), elem.get('COUNT', None))
+    for row in data:
+        cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
+        constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('BRAND', None), row.get('DOSE', None), row.get('COUNT', None))
+    logging(cursor, "Table Vaccins filled")
 
-    logging(cursor, datetime.now(), "Table Vaccins filled")
 
+def logging(cursor: pyodbc.Cursor, logging_data) -> None:
+    cursor.execute("insert into Logging(DATE, LOGGING) values (?, ?)", datetime.now(), logging_data)
 
-def logging(cursor: pyodbc.Cursor, date, logging_data) -> None:
-    cursor.execute("insert into Logging(DATE, LOGGING) values (?, ?)", date, logging_data)
-
-def getData(cursor, data):
+def get_data(url: str) -> Optional[list[dict]]:
+    response = None
     try:
-        return requests.get(data).json()
-    except requests.RequestException as err:
-        logging(cursor, datetime.now(), f"There was an error in retrieving: {data}")
+        response = requests.get(url,timeout=3)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as errh:
+        print("Http Error: ", errh)
+        pass
+    except requests.exceptions.ConnectionError as errc:
+        print("Error Connecting: ", errc)
+        pass
+    except requests.exceptions.Timeout as errt:
+        print("Timeout Error: ", errt)
+        pass
+    except requests.exceptions.RequestException as err:
+        print("Oops, Something Else: ", err)
+        pass
+    return response.json() if response is not None else response
 
 init_db()
-fillDatabase()
-schedule.every().day.at("01:00").do(fillDatabase)
+fill_database()
+schedule.every().day.at("01:00").do(fill_database)
 
 while True:
     schedule.run_pending()
