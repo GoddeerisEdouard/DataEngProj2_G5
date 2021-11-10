@@ -133,7 +133,7 @@ def get_data(url: str) -> Optional[List[dict]]:
     try:
         response = requests.get(url,timeout=3)
         response.raise_for_status()
-        filename = url.rsplit('/', 1)[-1]
+        filename = f"json/{url.rsplit('/', 1)[-1]}"
         
         if os.path.isfile(filename):
             result = []
