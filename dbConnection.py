@@ -60,7 +60,7 @@ def fill_database() -> None:
 def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Cases")
     
-    data = get_data(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
+    data = get_data('https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
     if data is None:
         logging(cursor, "There was an error in retrieving cases data")
         return
@@ -74,7 +74,7 @@ def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
 def data_mort(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Mort")
    
-    data = get_data(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
+    data = get_data('https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
     if data is None:
         logging(cursor, "There was an error in retrieving mort data")
         return
@@ -88,7 +88,7 @@ def data_mort(cursor: pyodbc.Cursor) -> None:
 def data_municipality(cursor: pyodbc.Cursor) -> None:
     cursor.execute("truncate table Muni")
     
-    data = get_data(cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
+    data = get_data('https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
     if data is None:
         logging(cursor, "There was an error in retrieving municipality data")
         return
