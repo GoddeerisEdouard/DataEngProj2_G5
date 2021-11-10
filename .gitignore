@@ -1,6 +1,2 @@
 config.py
 /__pycache__/
-json/COVID19BE_CASES_AGESEX.json
-json/COVID19BE_MORT.json
-json/COVID19BE_CASES_MUNI.json
-json/COVID19BE_VACC.json
