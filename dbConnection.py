@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 import pyodbc
 import requests
 import config
@@ -116,7 +116,7 @@ def data_vaccins(cursor: pyodbc.Cursor) -> None:
 def logging(cursor: pyodbc.Cursor, logging_data) -> None:
     cursor.execute("insert into Logging(DATE, LOGGING) values (?, ?)", datetime.now(), logging_data)
 
-def get_data(url: str) -> Optional[list[dict]]:
+def get_data(url: str) -> Optional[List[dict]]:
     response = None
     try:
         response = requests.get(url,timeout=3)
