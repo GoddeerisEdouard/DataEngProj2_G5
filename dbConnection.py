@@ -11,6 +11,9 @@ from datetime import datetime
 from contextlib import contextmanager
 import pyodbc
 import sys
+import json
+import os
+from itertools import groupby
 
 CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
 DATE_FORMAT = "%Y-%m-%d"
@@ -58,69 +61,104 @@ def fill_database() -> None:
 
 
 def data_cases_agesex(cursor: pyodbc.Cursor) -> None:
-    cursor.execute("truncate table Cases")
+    #cursor.execute("truncate table Cases")
     
     data = get_data('https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
     if data is None:
         logging(cursor, "There was an error in retrieving cases data")
         return
 
-    for row in data:
+    rows_affected = 0
+    for iteration, row in enumerate(data):
         cursor.execute("insert into Cases(DATE, PROVINCE, REGION, AGEGROUP, SEX, CASES) values (?, ?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         constants.provinces[row.get('PROVINCE', None)], constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('CASES', None))
-    logging(cursor, "Table Cases filled")
+        rows_affected = iteration
+        print(row)
+    logging(cursor, "Table Cases filled", ra=rows_affected)
 
 
 def data_mort(cursor: pyodbc.Cursor) -> None:
-    cursor.execute("truncate table Mort")
+    #cursor.execute("truncate table Mort")
    
     data = get_data('https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
     if data is None:
         logging(cursor, "There was an error in retrieving mort data")
         return
     
-    for row in data:
+    rows_affected = 0
+    for iteration, row in enumerate(data):
         cursor.execute("insert into Mort(DATE, REGION, AGEGROUP, SEX, DEATHS) values (?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('DEATHS', None))
-    logging(cursor, "Table Mort filled")
+        rows_affected = iteration
+        print(row)
+    logging(cursor, "Table Mort filled", ra=rows_affected)
 
 
 def data_municipality(cursor: pyodbc.Cursor) -> None:
-    cursor.execute("truncate table Muni")
+    #cursor.execute("truncate table Muni")
     
     data = get_data('https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
     if data is None:
         logging(cursor, "There was an error in retrieving municipality data")
         return
 
-    for row in data:
+    rows_affected = 0
+    for iteration, row in enumerate(data):
         cursor.execute("insert into Muni(NIS5, DATE, MUNI, PROVINCE, REGION, CASES) values (?, ?, ?, ?, ?, ?)", row.get('NIS5', None), datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         row.get('TX_DESCR_NL', None), constants.provinces[row.get('PROVINCE', None)], constants.regions[row.get('REGION', None)], row['CASES'].replace('<', '') if 'CASES' in row else None)
-    logging(cursor, "Table Muni filled")
+        rows_affected = iteration
+        print(row)
+    logging(cursor, "Table Muni filled", ra=rows_affected)
 
 
 def data_vaccins(cursor: pyodbc.Cursor) -> None:
-    cursor.execute("truncate table Vaccins")
+    #cursor.execute("truncate table Vaccins")
 
     data = get_data('https://epistat.sciensano.be/Data/COVID19BE_VACC.json')
     if data is None:
         logging(cursor, "There was an error in retrieving vaccin data")
         return
 
-    for row in data:
+    rows_affected = 0
+    for iteration, row in enumerate(data):
         cursor.execute("insert into Vaccins(DATE, REGION, AGEGROUP, SEX, BRAND, DOSE, COUNT) values (?, ?, ?, ?, ?, ?, ?)", datetime.strptime(row['DATE'], DATE_FORMAT) if 'DATE' in row else None, 
         constants.regions[row.get('REGION', None)], row.get('AGEGROUP', None), row.get('SEX', None), row.get('BRAND', None), row.get('DOSE', None), row.get('COUNT', None))
-    logging(cursor, "Table Vaccins filled")
+        rows_affected = iteration
+        print(row)
+    logging(cursor, "Table Vaccins filled", ra=rows_affected)
 
 
-def logging(cursor: pyodbc.Cursor, logging_data) -> None:
-    cursor.execute("insert into Logging(DATE, LOGGING) values (?, ?)", datetime.now(), logging_data)
+def logging(cursor: pyodbc.Cursor, logging_data, **kwargs) -> None:
+    rows_affected = kwargs.get('ra', 0)
+    cursor.execute("insert into Logging(DATE, LOGGING, ROWS_AFFECTED) values (?, ?, ?)", datetime.now(), logging_data, rows_affected)
 
 def get_data(url: str) -> Optional[List[dict]]:
     response = None
     try:
         response = requests.get(url,timeout=3)
         response.raise_for_status()
+        filename = url.rsplit('/', 1)[-1]
+        
+        if os.path.isfile(filename):
+            result = []
+            with open(filename) as f:
+                old_data = json.load(f)
+                for iteration, row in enumerate(response.json()):
+                    if row not in old_data:
+                        result.append()
+                    """if iteration > len(old_data):
+                        result.append(row)
+                    elif row != old_data[iteration]:
+                        result.append(row)"""
+                        
+            if len(result) != 0:
+                with open(filename, 'w') as f:
+                    json.dump(response.json(), f, indent=2)
+            return result
+        else:
+            with open(filename, 'w') as f:
+                json.dump(response.json(), f, indent=2)
+
     except requests.exceptions.HTTPError as errh:
         print("Http Error: ", errh)
         pass

@@ -56,6 +56,7 @@ sql_create_logging_table = """
     BEGIN
         CREATE TABLE Logging(
             DATE DATETIME,
-            LOGGING TEXT
+            LOGGING TEXT,
+            ROWS_AFFECTED INT
         )
     END"""
