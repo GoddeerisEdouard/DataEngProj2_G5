@@ -28,6 +28,7 @@ def open_db_connection(connection_string, commit=False):
         error, = err.args
         sys.stderr.write(error.message)
         cursor.execute("ROLLBACK")
+        logging(cursor, f"Database-connection Error {err.args[1]}")
         raise err
     else:
         if commit:
