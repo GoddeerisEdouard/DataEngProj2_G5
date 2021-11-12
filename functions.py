@@ -75,7 +75,7 @@ def get_data(url: str):# -> Optional[List[dict]]:
         else:
             with open(filename, 'w') as f:
                 json.dump(response.json(), f, indent=2)
-            return response.json()
+            return [response.json(), []]
 
     except requests.exceptions.HTTPError as errh:
         print("Http Error: ", errh)
