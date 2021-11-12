@@ -100,7 +100,8 @@ def variable_switch(key, value):
     SQL_STR_TRANS = {
         "DATE" : date_append(value),
         "REGION" : constants.regions[value],
-        "PROVINCE" : constants.provinces[value]
+        "PROVINCE" : constants.provinces[value],
+        "CASES" : value.replace('<', '') if type(value) == str else None
     }
     return SQL_STR_TRANS.get(key, value)
         
