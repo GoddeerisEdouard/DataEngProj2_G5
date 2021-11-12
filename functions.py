@@ -5,6 +5,9 @@ from itertools import groupby
 import pyodbc
 import requests
 from typing import Optional, List
+import constants
+
+DATE_FORMAT = "%Y-%m-%d"
 
 def logging(cursor: pyodbc.Cursor, logging_data, **kwargs) -> None:
     rows_affected = kwargs.get('ra', 0)
@@ -90,3 +93,24 @@ def get_data(url: str):# -> Optional[List[dict]]:
         print("Oops, Something Else: ", err)
         pass
     return [response, []]
+
+def variable_switch(key, value):
+    SQL_STR_TRANS = {
+        "DATE" : date_append(value),
+        "REGION" : constants.regions[value],
+        "PROVINCE" : constants.provinces[value]
+    }
+    return SQL_STR_TRANS.get(key, value)
+        
+def date_append(value):
+    try:
+        assert datetime.strptime(str(value), DATE_FORMAT)
+        return datetime.strptime(value, DATE_FORMAT) 
+    except:
+        return None
+
+def sql_insert_into(table, query_variables):
+    return f"INSERT INTO {table}({', '.join(query_variables)}) values ({('?, ' * len(query_variables))[:-2]});"
+
+def sql_delete_where(table, query_variables):
+    return f"DELETE FROM {table} WHERE {' = ? AND '.join(query_variables)} = ?"

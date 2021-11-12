@@ -1,4 +1,5 @@
-provinces = {
+from collections import defaultdict
+provinces = defaultdict(lambda : None ,{
     "Antwerpen" : "Antwerpen",
     "BrabantWallon" : "Waals Brabant",
     "Brussels" : "Brussel",
@@ -11,12 +12,12 @@ provinces = {
     "VlaamsBrabant" : "Vlaams-Brabant",
     "WestVlaanderen" : "West-Vlaanderen",
     None : None
-}
+})
 
-regions = {
+regions = defaultdict(lambda : None, {
     "Brussels" : "Brussel",
     "Flanders" : "Vlaanderen",
     "Wallonia" : "Wallonië",
     "Ostbelgien" : "Oost-België",
     None : None
-}
+})
