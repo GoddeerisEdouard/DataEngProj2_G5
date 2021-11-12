@@ -45,28 +45,30 @@ def get_data(url: str):# -> Optional[List[dict]]:
             with open(filename) as f:
                 old_data = json.load(f)
                 
-                if old_data == response.json():
+            if old_data == response.json():
+                return [new_data, delete_data]
+                
+            response_data, leftover_data = clean_data(response.json())
+                
+            # Veranderd de json-data naar een lijst met datum als key en de bijhorende json-objecten als data in een dictionary
+            old_data_dict = group_json_by_date(clean_data(old_data)[0])
+            response_data_dict = group_json_by_date(response_data)
+                
+            for key in sorted(response_data_dict, key=lambda x:x, reverse=True):
+                if old_data_dict == response_data_dict:
+                    with open(filename, 'w') as f:
+                        json.dump(response.json(), f, indent=2)
                     return [new_data, delete_data]
-                
-                response_data, leftover_data = clean_data(response.json())
-                
-                # Veranderd de json-data naar een lijst met datum als key en de bijhorende json-objecten als data in een dictionary
-                old_data_dict = group_json_by_date(clean_data(old_data)[0])
-                response_data_dict = group_json_by_date(response_data)
-                
-                for key in sorted(response_data_dict, key=lambda x:x, reverse=True):
-                    if old_data_dict == response_data_dict:
-                        return [new_data, delete_data]
                     
-                    if key not in old_data_dict:
-                        for row in response_data_dict[key]:
-                            new_data.append(row)
-                        response_data_dict.pop(key)
-                    elif response_data_dict[key] != old_data_dict[key]:
-                        for row in old_data_dict[key]:
-                            delete_data.append(row)
-                        for row in response_data_dict[key]:
-                            new_data.append(row)
+                if key not in old_data_dict:
+                    for row in response_data_dict[key]:
+                        new_data.append(row)
+                    response_data_dict.pop(key)
+                elif response_data_dict[key] != old_data_dict[key]:
+                    for row in old_data_dict[key]:
+                        delete_data.append(row)
+                    for row in response_data_dict[key]:
+                        new_data.append(row)
                 
                 if leftover_data != []:
                     for row in leftover_data:
