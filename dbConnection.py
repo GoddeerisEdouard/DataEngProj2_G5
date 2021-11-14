@@ -55,9 +55,9 @@ def fill_database() -> None:
             functions.logging(cursor, f"Database Error {err.args[1]}")
 
 def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list) -> None:
-    new_data, delete_data = functions.get_data(data_url)
+    insert_data, delete_data = functions.get_data(data_url)
     
-    if new_data is None:
+    if insert_data is None:
         functions.logging(cursor, f"There was an error in retrieving {table} data")
         return
     
@@ -65,18 +65,18 @@ def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list
         rows_affected = 0
         for iteration, row in enumerate(data):
             list_ = []
-            for item in variable_list:
-                list_.append(functions.variable_switch(item, row[item]) if item in row else None)
+            for column_name in variable_list:
+                list_.append(functions.variable_switch(column_name, row[column_name]) if column_name in row else None)
             cursor.execute(functie(table, variable_list), list_)
             rows_affected = iteration+1
         return rows_affected
     
     rows_affected = execute_query(delete_data, (lambda table_name, query_variables: functions.sql_delete_where(table_name, query_variables)))
-    rows_affected = execute_query(new_data, (lambda table_name, query_variables: functions.sql_insert_into(table_name, query_variables)))
+    rows_affected = execute_query(insert_data, (lambda table_name, query_variables: functions.sql_insert_into(table_name, query_variables)))
     functions.logging(cursor, f"Table {table} filled", ra=rows_affected)
 
-init_db()
-fill_database()
+#init_db()
+#fill_database()
 schedule.every().day.at("01:00").do(fill_database)
 
 while True:
