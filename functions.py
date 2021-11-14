@@ -94,6 +94,9 @@ def get_data(url: str):# -> Optional[List[dict]]:
     except requests.exceptions.RequestException as err:
         print("Oops, Something Else: ", err)
         pass
+    except Exception as ex:
+        print("It happened here")
+        pass
     return [response, []]
 
 def variable_switch(key, value):
