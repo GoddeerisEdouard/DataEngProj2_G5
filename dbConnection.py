@@ -61,7 +61,7 @@ def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list
         functions.logging(cursor, f"There was an error in retrieving {table} data")
         return
     
-    def effect(data, functie):
+    def execute_query(data, functie):
         rows_affected = 0
         for iteration, row in enumerate(data):
             list_ = []
@@ -71,8 +71,8 @@ def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list
             rows_affected = iteration+1
         return rows_affected
     
-    rows_affected = effect(delete_data, (lambda table_name, query_variables: functions.sql_delete_where(table_name, query_variables)))
-    rows_affected = effect(new_data, (lambda table_name, query_variables: functions.sql_insert_into(table_name, query_variables)))
+    rows_affected = execute_query(delete_data, (lambda table_name, query_variables: functions.sql_delete_where(table_name, query_variables)))
+    rows_affected = execute_query(new_data, (lambda table_name, query_variables: functions.sql_insert_into(table_name, query_variables)))
     functions.logging(cursor, f"Table {table} filled", ra=rows_affected)
 
 init_db()
