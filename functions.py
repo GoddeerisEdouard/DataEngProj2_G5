@@ -32,7 +32,7 @@ def clean_data(data: json):
             leftover_data.append(row)
     return [clean_data, leftover_data]
 
-def get_data(url: str):# -> Optional[List[dict]]:
+def get_data(url: str):# -> List[Optional[List[dict]]]:
     response = None
     try:
         response = requests.get(url,timeout=3)
@@ -40,43 +40,46 @@ def get_data(url: str):# -> Optional[List[dict]]:
         filename = url.rsplit('/', 1)[-1]
         
         if os.path.isfile(filename):
-            new_data = []
+            insert_data = []
             delete_data = []
             with open(filename) as f:
                 old_data = json.load(f)
                 
             if old_data == response.json():
-                return [new_data, delete_data]
+                return [insert_data, delete_data]
                 
-            response_data, leftover_data = clean_data(response.json())
+            clean_response_data, leftover_response_data = clean_data(response.json())
+            clean_old_data, leftover_old_data = clean_data(old_data)
                 
             # Veranderd de json-data naar een lijst met datum als key en de bijhorende json-objecten als data in een dictionary
-            old_data_dict = group_json_by_date(clean_data(old_data)[0])
-            response_data_dict = group_json_by_date(response_data)
-                
+            old_data_dict = group_json_by_date(clean_old_data)
+            response_data_dict = group_json_by_date(clean_response_data)
+            
+            if leftover_old_data != leftover_response_data:
+                for row in leftover_old_data:
+                    delete_data.append(row)
+                for row in leftover_response_data:
+                    insert_data.append(row)
+            
             for key in sorted(response_data_dict, key=lambda x:x, reverse=True):
                 if old_data_dict == response_data_dict:
                     with open(filename, 'w') as f:
                         json.dump(response.json(), f, indent=2)
-                    return [new_data, delete_data]
+                    return [insert_data, delete_data]
                     
                 if key not in old_data_dict:
                     for row in response_data_dict[key]:
-                        new_data.append(row)
+                        insert_data.append(row)
                     response_data_dict.pop(key)
                 elif response_data_dict[key] != old_data_dict[key]:
                     for row in old_data_dict[key]:
                         delete_data.append(row)
                     for row in response_data_dict[key]:
-                        new_data.append(row)
-                
-                if leftover_data != []:
-                    for row in leftover_data:
-                        new_data.append(row)
+                        insert_data.append(row)
                         
             with open(filename, 'w') as f:
                 json.dump(response.json(), f, indent=2)
-            return [new_data, delete_data]
+            return [insert_data, delete_data]
         else:
             with open(filename, 'w') as f:
                 json.dump(response.json(), f, indent=2)
@@ -93,9 +96,6 @@ def get_data(url: str):# -> Optional[List[dict]]:
         pass
     except requests.exceptions.RequestException as err:
         print("Oops, Something Else: ", err)
-        pass
-    except Exception as ex:
-        print("It happened here")
         pass
     return [response, []]
 
@@ -119,4 +119,4 @@ def sql_insert_into(table, query_variables):
     return f"INSERT INTO {table}({', '.join(query_variables)}) values ({('?, ' * len(query_variables))[:-2]});"
 
 def sql_delete_where(table, query_variables):
-    return f"DELETE FROM {table} WHERE {' = ? AND '.join(query_variables)} = ?"
+    return f"DELETE FROM {table} WHERE {' = ? AND '.join(query_variables)} = ?;"

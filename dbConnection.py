@@ -55,7 +55,6 @@ def fill_database() -> None:
             functions.logging(cursor, f"Database Error {err.args[1]}")
 
 def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list) -> None:
-
     new_data, delete_data = functions.get_data(data_url)
     
     if new_data is None:
@@ -71,10 +70,9 @@ def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list
             cursor.execute(functie(table, variable_list), list_)
             rows_affected = iteration+1
         return rows_affected
-
-    rows_affected = effect(delete_data, lambda table, variable_list: functions.sql_delete_where(table, variable_list))
-    rows_affected = effect(new_data, lambda table, variable_list: functions.sql_insert_into(table, variable_list))
     
+    rows_affected = effect(delete_data, (lambda table_name, query_variables: functions.sql_delete_where(table_name, query_variables)))
+    rows_affected = effect(new_data, (lambda table_name, query_variables: functions.sql_insert_into(table_name, query_variables)))
     functions.logging(cursor, f"Table {table} filled", ra=rows_affected)
 
 init_db()

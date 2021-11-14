@@ -3,9 +3,9 @@ sql_create_cases_table = """
   BEGIN
       CREATE TABLE Cases(
           [DATE] DATE,
-          PROVINCE TEXT,
-          REGION TEXT,
-          AGEGROUP TEXT,
+          PROVINCE VARCHAR(25),
+          REGION VARCHAR(25),
+          AGEGROUP VARCHAR(25),
           SEX VARCHAR(1),
           CASES INT
         )
@@ -17,8 +17,8 @@ sql_create_mort_table = """
     BEGIN
         CREATE TABLE Mort(
             [DATE] DATE,
-            REGION TEXT,
-            AGEGROUP TEXT,
+            REGION VARCHAR(25),
+            AGEGROUP VARCHAR(25),
             SEX VARCHAR(1),
             DEATHS INT
         )
@@ -30,9 +30,9 @@ sql_create_muni_table = """
         CREATE TABLE Muni(
             NIS5 VARCHAR(5),
             [DATE] DATE,
-            MUNI TEXT,
-            PROVINCE TEXT,
-            REGION TEXT,
+            MUNI VARCHAR(25),
+            PROVINCE VARCHAR(25),
+            REGION VARCHAR(25),
             CASES INT
         )
     END"""
@@ -42,10 +42,10 @@ sql_create_vaccins_table = """
     BEGIN
         CREATE TABLE Vaccins(
             [DATE] DATE,
-            REGION TEXT,
-            AGEGROUP TEXT,
+            REGION VARCHAR(25),
+            AGEGROUP VARCHAR(25),
             SEX VARCHAR(1),
-            BRAND TEXT,
+            BRAND VARCHAR(50),
             DOSE VARCHAR(1),
             COUNT INT
         )
