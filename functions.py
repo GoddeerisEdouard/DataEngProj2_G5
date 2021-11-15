@@ -22,6 +22,7 @@ def get_data_from_xlsx(response, filename):
     
     data_list = []
     for i in range(1, len(data[sheet_name])):
+        print(f"appending {i}")
         data_list.append({
             'REFNIS' : data[sheet_name][i][0],
             'MUNI' : data[sheet_name][i][1],
