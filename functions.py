@@ -57,7 +57,7 @@ def clean_data(data: json):
 def get_data(url: str):# -> List[Optional[List[dict]]]:
     response = None
     try:
-        response = requests.get(url,timeout=3)
+        response = requests.get(url)
         response.raise_for_status()
         filename = url.rsplit('/', 1)[-1]
         extension = url.rsplit('.', 1)[-1]
