@@ -40,22 +40,24 @@ def init_db() -> None:
         cursor.execute(sql_statements.sql_create_muni_table)
         cursor.execute(sql_statements.sql_create_vaccins_table)
         cursor.execute(sql_statements.sql_create_logging_table)
+        cursor.execute(sql_statements.sql_create_population_table)
         functions.logging(cursor, "Database has been initialized")
 
 
 def fill_database() -> None:
     with open_db_connection(CONN_STRING, commit=True) as cursor:
         try:
-            sql_table_manipulation("Cases", cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json', ["DATE", "PROVINCE", "REGION", "AGEGROUP", "SEX", "CASES"])
-            sql_table_manipulation("Mort", cursor, 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json', ["DATE", "REGION", "AGEGROUP", "SEX", "DEATHS"])
-            sql_table_manipulation("Muni", cursor, 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json', ["NIS5", "DATE", "MUNI", "PROVINCE", "REGION", "CASES"])
-            sql_table_manipulation("Vaccins", cursor, 'https://epistat.sciensano.be/Data/COVID19BE_VACC.json', ["DATE", "REGION", "AGEGROUP", "SEX", "BRAND", "DOSE", "COUNT"])
+            sql_table_manipulation("Cases", cursor, ["DATE", "PROVINCE", "REGION", "AGEGROUP", "SEX", "CASES"], 'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
+            sql_table_manipulation("Mort", cursor, ["DATE", "REGION", "AGEGROUP", "SEX", "DEATHS"], 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
+            sql_table_manipulation("Muni", cursor, ["NIS5", "DATE", "TX_DESCR_NL", "PROVINCE", "REGION", "CASES"], 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
+            sql_table_manipulation("Vaccins", cursor, ["DATE", "REGION", "AGEGROUP", "SEX", "BRAND", "DOSE", "COUNT"], 'https://epistat.sciensano.be/Data/COVID19BE_VACC.json')
+            sql_table_manipulation("Population", cursor, ["REFNIS", "MUNI", "PROVINCE", "REGION", "SEX", "NATIONALITY", "AGE", "POPULATION", "YEAR"], 'https://statbel.fgov.be/sites/default/files/files/opendata/bevolking%20naar%20woonplaats%2C%20nationaliteit%20burgelijke%20staat%20%2C%20leeftijd%20en%20geslacht/TF_SOC_POP_STRUCT_2021.xlsx')
             functions.logging(cursor, "Database filled")
         except pyodbc.DatabaseError as err:
             functions.logging(cursor, f"Database Error {err.args[1]}")
 
-def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list) -> None:
-    insert_data, delete_data = functions.get_data(data_url)
+def sql_table_manipulation(table, cursor: pyodbc.Cursor, variable_list, url) -> None:
+    insert_data, delete_data = functions.get_data(url)
     
     if insert_data is None:
         functions.logging(cursor, f"There was an error in retrieving {table} data")
@@ -75,8 +77,8 @@ def sql_table_manipulation(table, cursor: pyodbc.Cursor, data_url, variable_list
     rows_affected = execute_query(insert_data, (lambda table_name, query_variables: functions.sql_insert_into(table_name, query_variables)))
     functions.logging(cursor, f"Table {table} filled", ra=rows_affected)
 
-#init_db()
-#fill_database()
+init_db()
+fill_database()
 schedule.every().day.at("01:00").do(fill_database)
 
 while True:

@@ -6,12 +6,34 @@ import pyodbc
 import requests
 from typing import Optional, List
 import constants
+import pyexcel_xlsx
 
 DATE_FORMAT = "%Y-%m-%d"
 
 def logging(cursor: pyodbc.Cursor, logging_data, **kwargs) -> None:
     rows_affected = kwargs.get('ra', 0)
     cursor.execute("insert into Logging(DATE, LOGGING, ROWS_AFFECTED) values (?, ?, ?)", datetime.now(), logging_data, rows_affected)
+
+def get_data_from_xlsx(response, filename):
+    with open(filename, 'wb') as f:
+        f.write(response.content)
+    data = pyexcel_xlsx.get_data(filename)
+    sheet_name = "TH12"
+    
+    data_list = []
+    for i in range(1, len(data[sheet_name])):
+        data_list.append({
+            'REFNIS' : data[sheet_name][i][0],
+            'MUNI' : data[sheet_name][i][1],
+            'PROVINCE' : data[sheet_name][i][7],
+            'REGION' : data[sheet_name][i][10],
+            'SEX' : data[sheet_name][i][12],
+            'NATIONALITY' : data[sheet_name][i][14],
+            'AGE' : data[sheet_name][i][19],
+            'POPULATION' : data[sheet_name][i][20],
+            'YEAR' : 2021
+        })
+    return [data_list, []]
 
 def group_json_by_date(data: json) -> dict:
     data_group = groupby(data, lambda row: row['DATE'])
@@ -38,6 +60,10 @@ def get_data(url: str):# -> List[Optional[List[dict]]]:
         response = requests.get(url,timeout=3)
         response.raise_for_status()
         filename = url.rsplit('/', 1)[-1]
+        extension = url.rsplit('.', 1)[-1]
+        
+        if extension == "xlsx":
+            return get_data_from_xlsx(response, filename)
         
         if not os.path.isfile(filename):
             with open(filename, 'w') as f:
@@ -103,8 +129,8 @@ def variable_switch(key, value):
     SQL_STR_TRANS = {
         "DATE" : date_append(value),
         "REGION" : constants.regions[value],
-        "PROVINCE" : constants.provinces[value],
-        "CASES" : value.replace('<', '') if type(value) == str else None
+        "PROVINCE" : constants.provinces[value.rsplit(' ', 1)[-1] if type(value) == str else value],
+        "CASES" : value.replace('<', '') if type(value) == str else value
     }
     return SQL_STR_TRANS.get(key, value)
         

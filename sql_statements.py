@@ -30,7 +30,7 @@ sql_create_muni_table = """
         CREATE TABLE Muni(
             NIS5 VARCHAR(5),
             [DATE] DATE,
-            MUNI VARCHAR(25),
+            TX_DESCR_NL VARCHAR(50),
             PROVINCE VARCHAR(25),
             REGION VARCHAR(25),
             CASES INT
@@ -58,5 +58,21 @@ sql_create_logging_table = """
             DATE DATETIME,
             LOGGING TEXT,
             ROWS_AFFECTED INT
+        )
+    END"""
+
+sql_create_population_table = """
+    IF OBJECT_ID(N'dbo.Population', N'U') IS NULL
+    BEGIN
+        CREATE TABLE Population(
+            REFNIS VARCHAR(5),
+            MUNI VARCHAR(50),
+            PROVINCE VARCHAR(25),
+            REGION VARCHAR(25),
+            SEX VARCHAR(1),
+            NATIONALITY VARCHAR(25),
+            AGE INT,
+            POPULATION INT,
+            YEAR INT
         )
     END"""
