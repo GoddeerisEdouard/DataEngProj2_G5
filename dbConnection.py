@@ -8,8 +8,10 @@ import time
 from datetime import datetime
 from contextlib import contextmanager
 import sys
+import os
 
-CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
+#CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
+CONN_STRING = f'DRIVER={config.DRIVER};SERVER={config.SERVER};DATABASE={config.DATABASE};Trusted_Connection=yes;'
 DATE_FORMAT = "%Y-%m-%d"
 
 @contextmanager
@@ -51,7 +53,8 @@ def fill_database() -> None:
             sql_table_manipulation("Mort", cursor, ["DATE", "REGION", "AGEGROUP", "SEX", "DEATHS"], 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
             sql_table_manipulation("Muni", cursor, ["NIS5", "DATE", "TX_DESCR_NL", "PROVINCE", "REGION", "CASES"], 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
             sql_table_manipulation("Vaccins", cursor, ["DATE", "REGION", "AGEGROUP", "SEX", "BRAND", "DOSE", "COUNT"], 'https://epistat.sciensano.be/Data/COVID19BE_VACC.json')
-            sql_table_manipulation("Population", cursor, ["REFNIS", "MUNI", "PROVINCE", "REGION", "SEX", "NATIONALITY", "AGE", "POPULATION", "YEAR"], 'https://statbel.fgov.be/sites/default/files/files/opendata/bevolking%20naar%20woonplaats%2C%20nationaliteit%20burgelijke%20staat%20%2C%20leeftijd%20en%20geslacht/TF_SOC_POP_STRUCT_2021.xlsx')
+            if not os.path.isfile("TF_SOC_POP_STRUCT_2021.xlsx"):
+                sql_table_manipulation("Population", cursor, ["REFNIS", "MUNI", "PROVINCE", "REGION", "SEX", "NATIONALITY", "AGE", "POPULATION", "YEAR"], 'https://statbel.fgov.be/sites/default/files/files/opendata/bevolking%20naar%20woonplaats%2C%20nationaliteit%20burgelijke%20staat%20%2C%20leeftijd%20en%20geslacht/TF_SOC_POP_STRUCT_2021.xlsx')
             functions.logging(cursor, "Database filled")
         except pyodbc.DatabaseError as err:
             functions.logging(cursor, f"Database Error {err.args[1]}")
