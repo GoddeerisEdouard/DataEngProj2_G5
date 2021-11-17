@@ -10,17 +10,39 @@ provinces = defaultdict(lambda : None ,{
     "Namur" : "Namen",
     "OostVlaanderen" : "Oost-Vlaanderen",
     "VlaamsBrabant" : "Vlaams-Brabant",
-    "WestVlaanderen" : "West-Vlaanderen",
-    None : None
+    "WestVlaanderen" : "West-Vlaanderen"
 })
 
 regions = defaultdict(lambda : None, {
-    "Brussels Hoofdstedelijk Gewest" : "Brussel",
     "Brussels" : "Brussel",
-    "Vlaams Gewest" : "Vlaanderen",
     "Flanders" : "Vlaanderen",
-    "Waals Gewest" : "Wallonië",
     "Wallonia" : "Wallonië",
-    "Ostbelgien" : "Oost-België",
-    None : None
+    "Ostbelgien" : "Oost-België"
 })
+
+request_value_to_column_value = {
+    "Brussels Hoofdstedelijk Gewest" : "Brussels",
+    "Vlaams Gewest" : "Flanders",
+    "Waals Gewest" : "Wallonia"
+}
+
+request_key_to_column_name = {
+    "TX_RGN_DESCR_NL" : "REGION",
+    "TX_PROV_DESCR_NL" : "PROVINCE"
+}
+
+db_column_name_to_request_key = {
+    "Muni" : {
+        "MUNI" : "TX_DESCR_NL"
+    },
+    "Population" : {
+        "REFNIS" : "CD_REFNIS",
+        "MUNI" : "TX_DESCR_NL",
+        "PROVINCE" : "TX_PROV_DESCR_NL",
+        "REGION" : "TX_RGN_DESCR_NL",
+        "SEX" : "CD_SEX",
+        "NATIONALITY" : "TX_NATLTY_NL",
+        "AGE" : "CD_AGE",
+        "POPULATION" : "MS_POPULATION"
+    }
+}

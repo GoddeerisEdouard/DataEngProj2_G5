@@ -2,6 +2,7 @@ sql_create_cases_table = """
   IF OBJECT_ID(N'dbo.Cases', N'U') IS NULL
   BEGIN
       CREATE TABLE Cases(
+          ID INT identity(1, 1) primary key,
           [DATE] DATE,
           PROVINCE VARCHAR(25),
           REGION VARCHAR(25),
@@ -16,6 +17,7 @@ sql_create_mort_table = """
     IF OBJECT_ID(N'dbo.Mort', N'U') IS NULL
     BEGIN
         CREATE TABLE Mort(
+            ID INT identity(1, 1) primary key,
             [DATE] DATE,
             REGION VARCHAR(25),
             AGEGROUP VARCHAR(25),
@@ -28,9 +30,10 @@ sql_create_muni_table = """
     IF OBJECT_ID(N'dbo.Muni', N'U') IS NULL
     BEGIN
         CREATE TABLE Muni(
+            ID INT identity(1, 1) primary key,
             NIS5 VARCHAR(5),
             [DATE] DATE,
-            TX_DESCR_NL VARCHAR(50),
+            MUNI VARCHAR(50),
             PROVINCE VARCHAR(25),
             REGION VARCHAR(25),
             CASES INT
@@ -41,6 +44,7 @@ sql_create_vaccins_table = """
     IF OBJECT_ID(N'dbo.Vaccins', N'U') IS NULL
     BEGIN
         CREATE TABLE Vaccins(
+            ID INT identity(1, 1) primary key,
             [DATE] DATE,
             REGION VARCHAR(25),
             AGEGROUP VARCHAR(25),
@@ -55,6 +59,7 @@ sql_create_logging_table = """
     IF OBJECT_ID(N'dbo.Logging', N'U') IS NULL
     BEGIN
         CREATE TABLE Logging(
+            ID INT identity(1, 1) primary key,
             DATE DATETIME,
             LOGGING TEXT,
             ROWS_AFFECTED INT
@@ -65,6 +70,7 @@ sql_create_population_table = """
     IF OBJECT_ID(N'dbo.Population', N'U') IS NULL
     BEGIN
         CREATE TABLE Population(
+            ID INT identity(1, 1) primary key,
             REFNIS VARCHAR(5),
             MUNI VARCHAR(50),
             PROVINCE VARCHAR(25),

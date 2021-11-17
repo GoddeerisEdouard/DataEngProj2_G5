@@ -1,21 +1,24 @@
+from enum import Enum, auto
+from typing import  List
 import pyodbc
 import config
-import constants
 import functions
 import sql_statements
 import schedule
 import time
-from datetime import datetime
 from contextlib import contextmanager
 import sys
 import os
+import json
+import requests
+import constants
 
-#CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
-CONN_STRING = f'DRIVER={config.DRIVER};SERVER={config.SERVER};DATABASE={config.DATABASE};Trusted_Connection=yes;'
+CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
+#CONN_STRING = f'DRIVER={config.DRIVER};SERVER={config.SERVER};DATABASE={config.DATABASE};Trusted_Connection=yes;'
 DATE_FORMAT = "%Y-%m-%d"
 
 @contextmanager
-def open_db_connection(connection_string, commit=False):
+def open_db_connection(connection_string: str, commit=False):
     connection = pyodbc.connect(connection_string)
     cursor = connection.cursor()
     try:
@@ -47,41 +50,96 @@ def init_db() -> None:
 
 
 def fill_database() -> None:
+    with open("datasetsconf.json", 'r') as f:
+        datasetsdict = json.load(f)
+    datasets_data = datasetsdict['datasets']
     with open_db_connection(CONN_STRING, commit=True) as cursor:
         try:
-            sql_table_manipulation("Cases", cursor, ["DATE", "PROVINCE", "REGION", "AGEGROUP", "SEX", "CASES"], 'https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json')
-            sql_table_manipulation("Mort", cursor, ["DATE", "REGION", "AGEGROUP", "SEX", "DEATHS"], 'https://epistat.sciensano.be/Data/COVID19BE_MORT.json')
-            sql_table_manipulation("Muni", cursor, ["NIS5", "DATE", "TX_DESCR_NL", "PROVINCE", "REGION", "CASES"], 'https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json')
-            sql_table_manipulation("Vaccins", cursor, ["DATE", "REGION", "AGEGROUP", "SEX", "BRAND", "DOSE", "COUNT"], 'https://epistat.sciensano.be/Data/COVID19BE_VACC.json')
-            if not os.path.isfile("TF_SOC_POP_STRUCT_2021.xlsx"):
-                sql_table_manipulation("Population", cursor, ["REFNIS", "MUNI", "PROVINCE", "REGION", "SEX", "NATIONALITY", "AGE", "POPULATION", "YEAR"], 'https://statbel.fgov.be/sites/default/files/files/opendata/bevolking%20naar%20woonplaats%2C%20nationaliteit%20burgelijke%20staat%20%2C%20leeftijd%20en%20geslacht/TF_SOC_POP_STRUCT_2021.xlsx')
+            for data in datasets_data:
+                url = data['url']
+                extension = url.split('.')[-1]
+                if extension == "json":
+                    sql_table_manipulation(data['table_name'], cursor, data['column_names'], url)
+                elif extension == "xlsx":
+                    if not os.path.exists(f"{functions.DATASET_DIR}/{url.split('/')[-1]}"):
+                        sql_table_manipulation(data['table_name'], cursor, data['column_names'], url)
+                else:
+                    print(f"Extension not recognized {extension} from table {data['table_name']}")
             functions.logging(cursor, "Database filled")
         except pyodbc.DatabaseError as err:
+            print(err)
             functions.logging(cursor, f"Database Error {err.args[1]}")
 
-def sql_table_manipulation(table, cursor: pyodbc.Cursor, variable_list, url) -> None:
-    insert_data, delete_data = functions.get_data(url)
+def sql_table_manipulation(table: str, cursor: pyodbc.Cursor, variable_list: List[str], url: str) -> None:
+    filename = url.split('/')[-1]
+    filepath = f"{functions.DATASET_DIR}/{filename}"
+    if os.path.exists(filepath):
+        with open(filepath) as f:
+            old_data_list_dict = json.load(f)
+    else:
+        old_data_list_dict = []
+    try:
+        new_data_list_dict = functions.get_and_write_data_to_file(url)
+    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.RequestException) as err:
+        functions.logging(cursor, f"There was an error in retrieving {table} data: {err.args[1]}")
+        return
+
+    insert_delete_update_dict = functions.get_dict_diff(old_data_list_dict, new_data_list_dict)
     
-    if insert_data is None:
-        functions.logging(cursor, f"There was an error in retrieving {table} data")
+    if insert_delete_update_dict is None:
+        functions.logging(cursor, f"Table {table} filled", ra=0)
         return
     
-    def execute_query(data, functie):
-        rows_affected = 0
-        for iteration, row in enumerate(data):
-            list_ = []
-            for column_name in variable_list:
-                list_.append(functions.variable_switch(column_name, row[column_name]) if column_name in row else None)
-            cursor.execute(functie(table, variable_list), list_)
-            rows_affected = iteration+1
-        return rows_affected
+    delete_data = insert_delete_update_dict['delete_data']
+    update_data = insert_delete_update_dict['update_data']
+    insert_data = insert_delete_update_dict['insert_data']
+
+    rows_affected = 0
+    def execute_query(sql_statement_type: SqlStatementType) -> None:
+        function = SqlStatementType.get_function(sql_statement_type)
+        
+        if sql_statement_type is SqlStatementType.INSERT:
+            for row in insert_data:
+                column_values = [row.get(constants.db_column_name_to_request_key.get(table, {}).get(column_name, column_name), None) for column_name in variable_list]
+                cursor.execute(function(table, variable_list), column_values)
+        elif sql_statement_type is SqlStatementType.DELETE:
+            for id in delete_data:
+                cursor.execute(function(table), id)
+        elif sql_statement_type is SqlStatementType.UPDATE:
+            for row in update_data:
+                raw_column_names = list(row['column_changes'].keys())
+                valid_column_names = [constants.db_column_name_to_request_key.get(table, {}).get(column_name, column_name) for column_name in raw_column_names]
+                column_changes = list(row['column_changes'].values())
+                column_changes.append(row['id'])
+                cursor.execute(function(table, valid_column_names), column_changes)
     
-    rows_affected = execute_query(delete_data, (lambda table_name, query_variables: functions.sql_delete_where(table_name, query_variables)))
-    rows_affected = execute_query(insert_data, (lambda table_name, query_variables: functions.sql_insert_into(table_name, query_variables)))
+    if delete_data:
+        execute_query(SqlStatementType.DELETE)
+        rows_affected += len(delete_data)
+    if update_data:
+        execute_query(SqlStatementType.UPDATE)
+        rows_affected += len(update_data)
+    if insert_data:
+        execute_query(SqlStatementType.INSERT)
+        rows_affected += len(insert_data)
+
     functions.logging(cursor, f"Table {table} filled", ra=rows_affected)
 
+class SqlStatementType(Enum):
+    UPDATE=auto(),
+    INSERT=auto(),
+    DELETE=auto()
+    @classmethod
+    def get_function(self, p):
+        if self.UPDATE is p:
+            return functions.sql_update_where
+        elif self.INSERT is p:
+            return functions.sql_insert_into
+        elif self.DELETE is p:
+            return functions.sql_delete_where
+
 init_db()
-fill_database()
+#fill_database()
 schedule.every().day.at("01:00").do(fill_database)
 
 while True:

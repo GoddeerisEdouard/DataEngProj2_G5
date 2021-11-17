@@ -1,148 +1,125 @@
 from datetime import datetime
 import json
-import os
-from itertools import groupby
 import pyodbc
 import requests
-from typing import Optional, List
+from typing import List, Union
 import constants
 import pyexcel_xlsx
+from deepdiff import DeepDiff
+import re
 
 DATE_FORMAT = "%Y-%m-%d"
+DATASET_DIR = "dataset_files"
 
-def logging(cursor: pyodbc.Cursor, logging_data, **kwargs) -> None:
+def logging(cursor: pyodbc.Cursor, logging_data: str, **kwargs) -> None:
     rows_affected = kwargs.get('ra', 0)
     cursor.execute("insert into Logging(DATE, LOGGING, ROWS_AFFECTED) values (?, ?, ?)", datetime.now(), logging_data, rows_affected)
 
-def get_data_from_xlsx(response, filename):
-    with open(filename, 'wb') as f:
-        f.write(response.content)
-    data = pyexcel_xlsx.get_data(filename)
-    sheet_name = "TH12"
-    
-    data_list = []
-    for i in range(1, len(data[sheet_name])):
-        data_list.append({
-            'REFNIS' : data[sheet_name][i][0],
-            'MUNI' : data[sheet_name][i][1],
-            'PROVINCE' : data[sheet_name][i][7],
-            'REGION' : data[sheet_name][i][10],
-            'SEX' : data[sheet_name][i][12],
-            'NATIONALITY' : data[sheet_name][i][14],
-            'AGE' : data[sheet_name][i][19],
-            'POPULATION' : data[sheet_name][i][20],
-            'YEAR' : 2021
-        })
-    return [data_list, []]
-
-def group_json_by_date(data: json) -> dict:
-    data_group = groupby(data, lambda row: row['DATE'])
-    data_dict: dict = {}
-    for date, group in data_group:
-        data_dict[date] = []
-        for content in group:
-            data_dict[date].append(content)
-    return data_dict
-
-def clean_data(data: json):
-    clean_data = []
-    leftover_data = []
-    for row in data:
-        if 'DATE' in row:
-            clean_data.append(row)
-        else:
-            leftover_data.append(row)
-    return [clean_data, leftover_data]
-
-def get_data(url: str):# -> List[Optional[List[dict]]]:
-    response = None
+def get_and_write_data_to_file(url: str) -> List[dict]:
     try:
         response = requests.get(url)
         response.raise_for_status()
-        filename = url.rsplit('/', 1)[-1]
-        extension = url.rsplit('.', 1)[-1]
+    except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.RequestException) as err:
+        raise err
+    
+    filename = url.split('/')[-1]
+    filepath = f"{DATASET_DIR}/{filename}"
+    extension = filename.split('.')[-1]
+    json_data = []
+    
+    if extension == "xlsx":
+        sheet_name = "TH12"
+        filepath = f"{DATASET_DIR}/{filename}"
+        with open(filepath, 'wb') as f:
+            f.write(response.content)
         
-        if extension == "xlsx":
-            return get_data_from_xlsx(response, filename)
+        data = pyexcel_xlsx.get_data(filepath)
+        year = filename.split('_')[-1].split('.')[0]
         
-        if not os.path.isfile(filename):
-            with open(filename, 'w') as f:
-                json.dump(response.json(), f, indent=2)
-            return [response.json(), []]
-        
-        insert_data = []
-        delete_data = []
-        with open(filename) as f:
-            old_data = json.load(f)
-                
-        if old_data == response.json():
-            return [insert_data, delete_data]
-                
-        clean_response_data, leftover_response_data = clean_data(response.json())
-        clean_old_data, leftover_old_data = clean_data(old_data)
-                
-        # Veranderd de json-data naar een lijst met datum als key en de bijhorende json-objecten als data in een dictionary
-        old_data_dict = group_json_by_date(clean_old_data)
-        response_data_dict = group_json_by_date(clean_response_data)
-            
-        if leftover_old_data != leftover_response_data:
-            for row in leftover_old_data:
-                delete_data.append(row)
-            for row in leftover_response_data:
-                insert_data.append(row)
-            
-        for key in sorted(response_data_dict, key=lambda x:x, reverse=True):
-            if old_data_dict == response_data_dict:
-                with open(filename, 'w') as f:
-                    json.dump(response.json(), f, indent=2)
-                return [insert_data, delete_data]
-                    
-            if key not in old_data_dict:
-                for row in response_data_dict[key]:
-                    insert_data.append(row)
-                response_data_dict.pop(key)
-            elif response_data_dict[key] != old_data_dict[key]:
-                for row in old_data_dict[key]:
-                    delete_data.append(row)
-                for row in response_data_dict[key]:
-                    insert_data.append(row)
-                        
-        with open(filename, 'w') as f:
-            json.dump(response.json(), f, indent=2)
-        return [insert_data, delete_data]
+        for i in range(1, len(data[sheet_name])):
+            row = {}
+            for c in range(len(data[sheet_name][i])):
+                row[data[sheet_name][0][c]] = data[sheet_name][i][c]
+            row['YEAR'] = year
+            json_data.append(row)
+        return json_data
 
-    except requests.exceptions.HTTPError as errh:
-        print("Http Error: ", errh)
-        pass
-    except requests.exceptions.ConnectionError as errc:
-        print("Error Connecting: ", errc)
-        pass
-    except requests.exceptions.Timeout as errt:
-        print("Timeout Error: ", errt)
-        pass
-    except requests.exceptions.RequestException as err:
-        print("Oops, Something Else: ", err)
-        pass
-    return [response, []]
+    json_data = response.json()
+    with open(filepath, 'w') as f:
+        json.dump(json_data, f, indent=2)
+    return json_data
 
-def variable_switch(key, value):
-    SQL_STR_TRANS = {
-        "DATE" : date_append(value),
-        "REGION" : constants.regions[value],
-        "PROVINCE" : constants.provinces[value.rsplit(' ', 1)[-1] if type(value) == str else value],
-        "CASES" : value.replace('<', '') if type(value) == str else value
+
+def get_dict_diff(old_data_dict: List[dict], new_data_dict: List[dict]) -> dict:
+    result: dict = {
+        "insert_data" : [],
+        "delete_data" : [],
+        "update_data" : []
     }
-    return SQL_STR_TRANS.get(key, value)
-        
-def date_append(value):
-    try:
-        assert datetime.strptime(str(value), DATE_FORMAT)
-        return datetime.strptime(value, DATE_FORMAT) 
-    except:
+
+    if old_data_dict == []:
+        for row in new_data_dict:
+            for i in range(len(row)):
+                row[list(row.keys())[i]] = convert_to_correct_value(list(row.keys())[i], list(row.values())[i])
+        result['insert_data'] = new_data_dict
+        return result
+    
+    diff_old_new_data = DeepDiff(old_data_dict, new_data_dict, ignore_order=True)
+    if not diff_old_new_data:
         return None
 
-def sql_insert_into(table, query_variables):
+    if 'iterable_item_added' in diff_old_new_data:
+        insert_data_result = []
+        for i, row in enumerate(diff_old_new_data['iterable_item_added']):
+            value = list(diff_old_new_data['iterable_item_added'].values())[i]
+            row_dict = {}
+            for p in range(len(value)):
+                row_dict[list(value.keys())[p]] = convert_to_correct_value(list(value.keys())[p], list(value.values())[p])
+            insert_data_result.append(row_dict)
+        result['insert_data'] = insert_data_result
+    if 'iterable_item_removed' in diff_old_new_data:
+        result['delete_data'] = [int(re.findall(r"\d+", key)[0]) + 1 for key in list(diff_old_new_data['iterable_item_removed'].keys())]
+    if 'values_changed' in diff_old_new_data:
+        for i, key in enumerate(diff_old_new_data['values_changed'].keys()):
+            row = {
+                "id" : None,
+                "column_changes" : {}
+            }
+            row["id"] = int(re.findall(r"\d+", key)[0]) + 1
+            column_name = re.findall(r"'([^']*)'", key)[0]
+            raw_new_value = list(diff_old_new_data['values_changed'].values())[i]['new_value']
+            row["column_changes"][column_name] = convert_to_correct_value(column_name, raw_new_value)
+            diff_old_new_data['values_changed']
+            result['update_data'].append(row)
+    return result
+
+
+def convert_to_correct_value(column_name: str, value: Union[str, int]) -> Union[str, int]:
+    valid_column_name = constants.request_key_to_column_name.get(column_name, column_name)
+    valid_value = constants.request_value_to_column_value.get(value, value)
+    if valid_column_name == "DATE":
+        return date_append(valid_value) if type(valid_value) == str else None
+    if valid_column_name == "REGION":
+        return constants.regions[valid_value]
+    if valid_column_name == "PROVINCE":
+        return constants.provinces[valid_value.split(' ')[-1] if type(valid_value) == str else valid_value]
+    if valid_column_name == "CASES":
+        return valid_value.replace('<', '') if type(valid_value) == str else valid_value
+    else:
+        return valid_value
+
+        
+def date_append(value: str):
+    try:
+        return datetime.strptime(value, DATE_FORMAT)
+    except ValueError:
+        return None
+
+def sql_insert_into(table: str, query_variables: List[str]) -> str:
     return f"INSERT INTO {table}({', '.join(query_variables)}) values ({('?, ' * len(query_variables))[:-2]});"
 
-def sql_delete_where(table, query_variables):
-    return f"DELETE FROM {table} WHERE {' = ? AND '.join(query_variables)} = ?;"
+def sql_delete_where(table: str) -> str:
+    return f"DELETE FROM {table} WHERE ID = ?;"
+
+def sql_update_where(table: str, column_names_to_be_updated: List[str]) -> str:
+    return f"UPDATE {table} SET {' = ?, '.join(column_names_to_be_updated)} = ? WHERE ID = ?;"
