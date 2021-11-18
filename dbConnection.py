@@ -13,8 +13,8 @@ import json
 import requests
 import constants
 
-CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
-#CONN_STRING = f'DRIVER={config.DRIVER};SERVER={config.SERVER};DATABASE={config.DATABASE};Trusted_Connection=yes;'
+#CONN_STRING = f'DRIVER={config.DRIVER};SERVER=tcp:{config.SERVER};PORT=1433;DATABASE={config.DATABASE};UID={config.USERNAME};PWD={config.PASSWORD}'
+CONN_STRING = f'DRIVER={config.DRIVER};SERVER={config.SERVER};DATABASE={config.DATABASE};Trusted_Connection=yes;'
 DATE_FORMAT = "%Y-%m-%d"
 
 @contextmanager
@@ -46,6 +46,8 @@ def init_db() -> None:
         cursor.execute(sql_statements.sql_create_vaccins_table)
         cursor.execute(sql_statements.sql_create_logging_table)
         cursor.execute(sql_statements.sql_create_population_table)
+        cursor.execute(sql_statements.sql_create_education_muni_table)
+        cursor.execute(sql_statements.sql_create_education_prov_reg_table)
         functions.logging(cursor, "Database has been initialized")
 
 
@@ -62,7 +64,7 @@ def fill_database() -> None:
                     sql_table_manipulation(data['table_name'], cursor, data['column_names'], url)
                 elif extension == "xlsx":
                     if not os.path.exists(f"{functions.DATASET_DIR}/{url.split('/')[-1]}"):
-                        sql_table_manipulation(data['table_name'], cursor, data['column_names'], url)
+                        sql_table_manipulation(data['table_name'], cursor, data['column_names'], url, sheet_name=data['sheet_name'])
                 else:
                     print(f"Extension not recognized {extension} from table {data['table_name']}")
             functions.logging(cursor, "Database filled")
@@ -70,7 +72,7 @@ def fill_database() -> None:
             print(err)
             functions.logging(cursor, f"Database Error {err.args[1]}")
 
-def sql_table_manipulation(table: str, cursor: pyodbc.Cursor, variable_list: List[str], url: str) -> None:
+def sql_table_manipulation(table: str, cursor: pyodbc.Cursor, variable_list: List[str], url: str, **kwargs) -> None:
     filename = url.split('/')[-1]
     filepath = f"{functions.DATASET_DIR}/{filename}"
     if os.path.exists(filepath):
@@ -79,7 +81,8 @@ def sql_table_manipulation(table: str, cursor: pyodbc.Cursor, variable_list: Lis
     else:
         old_data_list_dict = []
     try:
-        new_data_list_dict = functions.get_and_write_data_to_file(url)
+        sheet_name = kwargs.get("sheet_name", None)
+        new_data_list_dict = functions.get_and_write_data_to_file(url) if sheet_name is None else functions.get_and_write_data_to_file(url, sheet_name=sheet_name)
     except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.RequestException) as err:
         functions.logging(cursor, f"There was an error in retrieving {table} data: {err.args[1]}")
         return
@@ -140,8 +143,8 @@ class SqlStatementType(Enum):
 
 init_db()
 fill_database()
-schedule.every().day.at("01:00").do(fill_database)
+"""schedule.every().day.at("01:00").do(fill_database)
 
 while True:
     schedule.run_pending()
-    time.sleep(60)
+    time.sleep(60)"""

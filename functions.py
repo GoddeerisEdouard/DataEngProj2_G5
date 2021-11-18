@@ -15,7 +15,7 @@ def logging(cursor: pyodbc.Cursor, logging_data: str, **kwargs) -> None:
     rows_affected = kwargs.get('ra', 0)
     cursor.execute("insert into Logging(DATE, LOGGING, ROWS_AFFECTED) values (?, ?, ?)", datetime.now(), logging_data, rows_affected)
 
-def get_and_write_data_to_file(url: str) -> List[dict]:
+def get_and_write_data_to_file(url: str, **kwargs) -> List[dict]:
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -26,9 +26,9 @@ def get_and_write_data_to_file(url: str) -> List[dict]:
     filepath = f"{DATASET_DIR}/{filename}"
     extension = filename.split('.')[-1]
     json_data = []
-    
+    sheet_name = kwargs.get('sheet_name', None)
+
     if extension == "xlsx":
-        sheet_name = "TH12"
         filepath = f"{DATASET_DIR}/{filename}"
         with open(filepath, 'wb') as f:
             f.write(response.content)
@@ -105,6 +105,15 @@ def convert_to_correct_value(column_name: str, value: Union[str, int]) -> Union[
         return constants.provinces[valid_value.split(' ')[-1] if type(valid_value) == str else valid_value]
     if valid_column_name == "CASES":
         return valid_value.replace('<', '') if type(valid_value) == str else valid_value
+    if valid_column_name == "AGEGROUP":
+        return valid_value.replace(' en ouder', '+') if type(valid_value) == str else valid_value
+    if valid_column_name == "SEX":
+        if valid_value == "1":
+            return "M"
+        elif valid_value == "2":
+            return "F"
+        else:
+            return valid_value
     else:
         return valid_value
 

@@ -28,7 +28,9 @@ request_value_to_column_value = {
 
 request_key_to_column_name = {
     "TX_RGN_DESCR_NL" : "REGION",
-    "TX_PROV_DESCR_NL" : "PROVINCE"
+    "TX_PROV_DESCR_NL" : "PROVINCE",
+    "CD_SEX" : "SEX",
+    "CD_AGE_CL" : "AGEGROUP"
 }
 
 db_column_name_to_request_key = {
@@ -43,6 +45,20 @@ db_column_name_to_request_key = {
         "SEX" : "CD_SEX",
         "NATIONALITY" : "TX_NATLTY_NL",
         "AGE" : "CD_AGE",
+        "POPULATION" : "MS_POPULATION"
+    },
+    "Education_Muni" : {
+        "REFNIS" : "CD_MUNTY_REFNIS",
+        "MUNI" : "TX_MUNTY_DESCR_NL",
+        "EDUCATION" : "CD_ISCED_CL",
+        "POPULATION" : "MS_POPULATION",
+        "POPULATION25" : "MS_POPULATION_25"
+    },
+    "Education_Prov_Reg" : {
+        "SEX" : "CD_SEX",
+        "AGEGROUP" : "CD_AGE_CL",
+        "ORIGIN" : "CD_DSCNT_CL",
+        "EDUCATION" : "CD_ISCED_CL",
         "POPULATION" : "MS_POPULATION"
     }
 }

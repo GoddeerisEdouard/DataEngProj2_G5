@@ -82,3 +82,29 @@ sql_create_population_table = """
             YEAR INT
         )
     END"""
+
+sql_create_education_muni_table = """
+    IF OBJECT_ID(N'dbo.Education_Muni', N'U') IS NULL
+    BEGIN
+        CREATE TABLE Education_Muni(
+            ID INT identity(1, 1) primary key,
+            REFNIS VARCHAR(5),
+            MUNI VARCHAR(50),
+            EDUCATION VARCHAR(10),
+            POPULATION INT,
+            POPULATION25 INT
+        )
+    END"""
+
+sql_create_education_prov_reg_table = """
+    IF OBJECT_ID(N'dbo.Education_Prov_Reg', N'U') IS NULL
+    BEGIN
+        CREATE TABLE Education_Prov_Reg(
+            ID INT identity(1, 1) primary key,
+            SEX VARCHAR(1),
+            AGEGROUP VARCHAR(25),
+            ORIGIN VARCHAR(10),
+            EDUCATION VARCHAR(10),
+            POPULATION INT
+        )
+    END"""
