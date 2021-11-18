@@ -1,0 +1,29 @@
+{
+    "datasets": [
+        {
+            "table_name" : "Cases",
+            "column_names" : ["DATE", "PROVINCE", "REGION", "AGEGROUP", "SEX", "CASES"],
+            "url" : "https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.json"
+        },
+        {
+            "table_name" : "Mort",
+            "column_names" : ["DATE", "REGION", "AGEGROUP", "SEX", "DEATHS"],
+            "url" : "https://epistat.sciensano.be/Data/COVID19BE_MORT.json"
+        },
+        {
+            "table_name" : "Muni",
+            "column_names" : ["NIS5", "DATE", "MUNI", "PROVINCE", "REGION", "CASES"],
+            "url" : "https://epistat.sciensano.be/Data/COVID19BE_CASES_MUNI.json"
+        },
+        {
+            "table_name" : "Vaccins",
+            "column_names" : ["DATE", "REGION", "AGEGROUP", "SEX", "BRAND", "DOSE", "COUNT"],
+            "url" : "https://epistat.sciensano.be/Data/COVID19BE_VACC.json"
+        },
+        {
+            "table_name" : "Population",
+            "column_names" : ["REFNIS", "MUNI", "PROVINCE", "REGION", "SEX", "NATIONALITY", "AGE", "POPULATION", "YEAR"],
+            "url" : "https://statbel.fgov.be/sites/default/files/files/opendata/bevolking%20naar%20woonplaats%2C%20nationaliteit%20burgelijke%20staat%20%2C%20leeftijd%20en%20geslacht/TF_SOC_POP_STRUCT_2021.xlsx"
+        }
+    ]
+}

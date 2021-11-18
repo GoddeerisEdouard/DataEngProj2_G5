@@ -139,7 +139,7 @@ class SqlStatementType(Enum):
             return functions.sql_delete_where
 
 init_db()
-#fill_database()
+fill_database()
 schedule.every().day.at("01:00").do(fill_database)
 
 while True:
