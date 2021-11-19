@@ -61,12 +61,10 @@ def fill_database() -> None:
                 url = data['url']
                 extension = url.split('.')[-1]
                 if extension == "json":
-                    functions.get_and_write_data_to_file(url)
-                    #sql_table_manipulation(data['table_name'], cursor, data['column_names'], url)
+                    sql_table_manipulation(data['table_name'], cursor, data['column_names'], url)
                 elif extension == "xlsx":
                     if not os.path.exists(f"{functions.DATASET_DIR}/{url.split('/')[-1]}"):
-                        functions.get_and_write_data_to_file(url, sheet_name=data['sheet_name'])
-                        #sql_table_manipulation(data['table_name'], cursor, data['column_names'], url, sheet_name=data['sheet_name'])
+                        sql_table_manipulation(data['table_name'], cursor, data['column_names'], url, sheet_name=data['sheet_name'])
                 else:
                     print(f"Extension not recognized {extension} from table {data['table_name']}")
             functions.logging(cursor, "Database filled")
@@ -144,9 +142,9 @@ class SqlStatementType(Enum):
             return functions.sql_delete_where
 
 #init_db()
-fill_database()
-"""schedule.every().day.at("01:00").do(fill_database)
+#fill_database()
+schedule.every().day.at("01:00").do(fill_database)
 
 while True:
     schedule.run_pending()
-    time.sleep(60)"""
+    time.sleep(60)
