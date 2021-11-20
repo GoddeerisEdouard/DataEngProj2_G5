@@ -66,28 +66,13 @@ sql_create_logging_table = """
         )
     END"""
 
-sql_create_population_table = """
-    IF OBJECT_ID(N'dbo.Population', N'U') IS NULL
-    BEGIN
-        CREATE TABLE Population(
-            ID INT identity(1, 1) primary key,
-            REFNIS VARCHAR(5),
-            MUNI VARCHAR(50),
-            PROVINCE VARCHAR(25),
-            REGION VARCHAR(25),
-            SEX VARCHAR(1),
-            NATIONALITY VARCHAR(25),
-            AGE INT,
-            POPULATION INT,
-            YEAR INT
-        )
-    END"""
-
 sql_create_education_muni_table = """
     IF OBJECT_ID(N'dbo.Education_Muni', N'U') IS NULL
     BEGIN
         CREATE TABLE Education_Muni(
             ID INT identity(1, 1) primary key,
+            PROVINCE VARCHAR(25),
+            REGION VARCHAR(25),
             REFNIS VARCHAR(5),
             MUNI VARCHAR(50),
             EDUCATION VARCHAR(10),
@@ -96,15 +81,32 @@ sql_create_education_muni_table = """
         )
     END"""
 
-sql_create_education_prov_reg_table = """
-    IF OBJECT_ID(N'dbo.Education_Prov_Reg', N'U') IS NULL
+sql_create_education_age_origin_table = """
+    IF OBJECT_ID(N'dbo.Education_Age_Origin', N'U') IS NULL
     BEGIN
-        CREATE TABLE Education_Prov_Reg(
+        CREATE TABLE Education_Age_Origin(
             ID INT identity(1, 1) primary key,
+            PROVINCE VARCHAR(25),
+            REGION VARCHAR(25),
             SEX VARCHAR(1),
             AGEGROUP VARCHAR(25),
             ORIGIN VARCHAR(10),
             EDUCATION VARCHAR(10),
             POPULATION INT
+        )
+    END"""
+
+sql_create_income_table = """
+    IF OBJECT_ID(N'dbo.Income', N'U') IS NULL
+    BEGIN
+        CREATE TABLE Income(
+            ID INT identity(1, 1) primary key,
+            YEAR INT,
+            REFNIS VARCHAR(5),
+            INCOME BIGINT,
+            POPULATION INT,
+            MUNI VARCHAR(50),
+            PROVINCE VARCHAR(25),
+            REGION VARCHAR(25)
         )
     END"""

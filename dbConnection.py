@@ -45,9 +45,9 @@ def init_db() -> None:
         cursor.execute(sql_statements.sql_create_muni_table)
         cursor.execute(sql_statements.sql_create_vaccins_table)
         cursor.execute(sql_statements.sql_create_logging_table)
-        cursor.execute(sql_statements.sql_create_population_table)
         cursor.execute(sql_statements.sql_create_education_muni_table)
-        cursor.execute(sql_statements.sql_create_education_prov_reg_table)
+        cursor.execute(sql_statements.sql_create_education_age_origin_table)
+        cursor.execute(sql_statements.sql_create_income_table)
         functions.logging(cursor, "Database has been initialized")
 
 
@@ -141,8 +141,8 @@ class SqlStatementType(Enum):
         elif self.DELETE is p:
             return functions.sql_delete_where
 
-#init_db()
-#fill_database()
+init_db()
+fill_database()
 schedule.every().day.at("01:00").do(fill_database)
 
 while True:

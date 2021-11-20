@@ -21,22 +21,22 @@
             "url" : "https://epistat.sciensano.be/Data/COVID19BE_VACC.json"
         },
         {
-            "table_name" : "Population",
-            "column_names" : ["REFNIS", "MUNI", "PROVINCE", "REGION", "SEX", "NATIONALITY", "AGE", "POPULATION", "YEAR"],
-            "url" : "https://statbel.fgov.be/sites/default/files/files/opendata/bevolking%20naar%20woonplaats%2C%20nationaliteit%20burgelijke%20staat%20%2C%20leeftijd%20en%20geslacht/TF_SOC_POP_STRUCT_2021.xlsx",
-            "sheet_name" : "TH12"
-        },
-        {
             "table_name" : "Education_Muni",
-            "column_names" : ["REFNIS", "MUNI", "EDUCATION", "POPULATION", "POPULATION25"],
+            "column_names" : ["PROVINCE", "REGION", "REFNIS", "MUNI", "EDUCATION", "POPULATION", "POPULATION25"],
             "url" : "https://statbel.fgov.be/sites/default/files/files/opendata/Datalab%20opleidingsniveau/TU_GEMEENTE_2017.xlsx",
             "sheet_name" : "Blad1"
         },
         {
-            "table_name" : "Education_Prov_Reg",
-            "column_names" : ["SEX", "AGEGROUP", "ORIGIN", "EDUCATION", "POPULATION"],
+            "table_name" : "Education_Age_Origin",
+            "column_names" : ["PROVINCE", "REGION", "SEX", "AGEGROUP", "ORIGIN", "EDUCATION", "POPULATION"],
             "url" : "https://statbel.fgov.be/sites/default/files/files/opendata/Datalab%20opleidingsniveau/RES_EDU_2017.xlsx",
             "sheet_name" : "RES_EDU_2017_NEW_ALT_DIF"
+        },
+        {
+            "table_name" : "Income",
+            "column_names" : ["YEAR", "REFNIS", "INCOME", "POPULATION", "MUNI", "PROVINCE", "REGION"],
+            "url" : "https://statbel.fgov.be/sites/default/files/files/opendata/arbeid/TF_PSNL_INC_TAX_MUNTY.xlsx",
+            "sheet_name" : "TF_PSNL_INC_TAX_MUNTY"
         }
     ]
 }

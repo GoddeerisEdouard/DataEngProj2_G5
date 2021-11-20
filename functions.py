@@ -97,12 +97,19 @@ def get_dict_diff(old_data_dict: List[dict], new_data_dict: List[dict]) -> dict:
 def convert_to_correct_value(column_name: str, value: Union[str, int]) -> Union[str, int]:
     valid_column_name = constants.request_key_to_column_name.get(column_name, column_name)
     valid_value = constants.request_value_to_column_value.get(value, value)
+    code_to_valid_prov_reg = constants.code_to_prov_reg_name.get(valid_value, valid_value)
     if valid_column_name == "DATE":
         return date_append(valid_value) if type(valid_value) == str else None
     if valid_column_name == "REGION":
+        if "BE" in valid_value:
+            return code_to_valid_prov_reg
         return constants.regions[valid_value]
     if valid_column_name == "PROVINCE":
-        return constants.provinces[valid_value.split(' ')[-1] if type(valid_value) == str else valid_value]
+        if "BE" in valid_value:
+            return code_to_valid_prov_reg
+        if "Provincie " in valid_value:
+            return valid_value.split(' ')[-1]
+        return constants.provinces[valid_value]
     if valid_column_name == "CASES":
         return valid_value.replace('<', '') if type(valid_value) == str else valid_value
     if valid_column_name == "AGEGROUP":
@@ -114,6 +121,8 @@ def convert_to_correct_value(column_name: str, value: Union[str, int]) -> Union[
             return "F"
         else:
             return valid_value
+    if valid_column_name == "INCOME":
+        return int(valid_value)
     else:
         return valid_value
 
